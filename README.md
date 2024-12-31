@@ -1,3 +1,8 @@
+```
+git clone https://github.com/afrizalhasbi/dataspeech
+cd dataspeech
+pip install -r requirements.txt
+```
 # Data-Speech
 
 Data-Speech is a suite of utility scripts designed to tag speech datasets. 
