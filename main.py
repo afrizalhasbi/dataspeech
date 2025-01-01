@@ -126,6 +126,7 @@ if __name__ == "__main__":
             if args.apply_squim_quality_estimation:
                 dataset = dataset.add_column("stoi", squim_dataset["stoi"]).add_column("si-sdr", squim_dataset["sdr"]).add_column("pesq", squim_dataset["pesq"])
         
+    print(dataset)
     if args.output_dir:
         print("Saving to disk...")
         dataset.save_to_disk(args.output_dir)
