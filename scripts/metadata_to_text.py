@@ -302,8 +302,7 @@ if __name__ == "__main__":
         with open(args.save_bin_edges, "w") as outfile: 
             json.dump(bin_edges, outfile)
         
-    if not args.only_save_plot:
-        print(df)
+    if not args.only_save_plot
         if args.output_dir:
             for output_dir, df in zip(output_dirs, dataset):
                 df.save_to_disk(output_dir)
