@@ -31,7 +31,7 @@ if __name__ == "__main__":
     
     if args.configuration:
         try:
-            dataset = load_from_disk(args.dataset_name, args.configuration)
+            dataset = load_from_disk(args.dataset_name)
         except:
             dataset = load_dataset(args.dataset_name, args.configuration, num_proc=args.cpu_num_workers)
     else:
