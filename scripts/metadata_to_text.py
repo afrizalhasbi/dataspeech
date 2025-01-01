@@ -105,12 +105,13 @@ def speaker_level_relative_to_gender(dataset, text_bins, speaker_column_name, ge
     Then associate a text bin to the column.
     This time, doesn't use leading_split_for_bins, computes it for all. Could probably be optimized
     '''
+
     list_data = []
     for df in dataset:
         for split in df:
             panda_data = df[split].remove_columns([col for col in df[split].column_names if col not in {speaker_column_name, column_name, gender_column_name}]).to_pandas()
             list_data.append(panda_data)
-        
+            
     dataframe = pd.concat(list_data, ignore_index=True)
     dataframe = dataframe.groupby(speaker_column_name).agg({column_name: "mean", gender_column_name: "first"})
     if bin_edges is None:
@@ -285,7 +286,7 @@ if __name__ == "__main__":
 
     
     print(dataset)
-    print(dataset.select(range(1))[0])
+    print(dataset[0].select(range(1))[0])
     if args.save_bin_edges:
         bin_edges = {
             "speaking_rate": speaking_rate_bin_edges.tolist(),
