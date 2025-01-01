@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from datasets import load_dataset, DatasetDict
+from datasets import load_dataset, load_from_disk, DatasetDict
 from multiprocess import set_start_method
 import argparse
 from pathlib import Path
