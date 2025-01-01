@@ -25,6 +25,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers_per_gpu_for_snr", default=1, type=int, help="Number of workers per GPU for the SNR and reverberation estimation if GPUs are available. Defaults to 1 if some are avaiable. Useful if you want multiple processes per GPUs to maximise GPU usage.")
     parser.add_argument("--apply_squim_quality_estimation", action="store_true", help="If set, will also use torchaudio-squim estimation (SI-SNR, STOI and PESQ).")
     parser.add_argument("--num_workers_per_gpu_for_squim", default=1, type=int, help="Number of workers per GPU for the SI-SNR, STOI and PESQ estimation if GPUs are available. Defaults to 1 if some are avaiable. Useful if you want multiple processes per GPUs to maximise GPU usage.")
+    parser.add_argument("--debug", action="store_true", required=False, help="Check if code is working.")
 
 
     args = parser.parse_args()
@@ -39,6 +40,9 @@ if __name__ == "__main__":
             dataset = load_from_disk(args.dataset_name)
         except:
             dataset = load_dataset(args.dataset_name, num_proc=args.cpu_num_workers)
+    if args.debug:
+        print("Checking with 100 samples to see if the script is working"
+        dataset = dataset.select(range(100))
         
     audio_column_name = "audio" if args.rename_column else args.audio_column_name
     text_column_name = "text" if args.rename_column else args.text_column_name
@@ -81,7 +85,8 @@ if __name__ == "__main__":
     )
     
     print("Compute speaking rate")
-    if "speech_duration" in snr_dataset[next(iter(snr_dataset.keys()))].features:    
+    # if "speech_duration" in snr_dataset[next(iter(snr_dataset.keys()))].features:    
+    if "speech_duration" in snr_dataset.column_names:    
         rate_dataset = snr_dataset.map(
             rate_apply,
             with_rank=False,
