@@ -283,6 +283,8 @@ if __name__ == "__main__":
         dataset, sdr_bin_edges = bins_to_text(dataset, sdr_bins, "si-sdr", "sdr_noise", batch_size=args.batch_size, num_workers=args.cpu_num_workers, leading_split_for_bins=args.leading_split_for_bins, std_tolerance=args.sdr_std_tolerance, save_dir=args.plot_directory, only_save_plot=args.only_save_plot, bin_edges=bin_edges_dict.get("si-sdr",None))
         dataset, pesq_bin_edges = bins_to_text(dataset, pesq_std, "pesq", "pesq_speech_quality", batch_size=args.batch_size, num_workers=args.cpu_num_workers, leading_split_for_bins=args.leading_split_for_bins, std_tolerance=args.pesq_std_tolerance, save_dir=args.plot_directory, only_save_plot=args.only_save_plot, bin_edges=bin_edges_dict.get("pesq",None))
 
+    print(df)
+    print(dataset)
     if args.save_bin_edges:
         bin_edges = {
             "speaking_rate": speaking_rate_bin_edges.tolist(),
