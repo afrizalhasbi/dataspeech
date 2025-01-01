@@ -258,7 +258,10 @@ if __name__ == "__main__":
                 dataset.append(tmp_dataset)
 
         else:
-            dataset = [load_dataset(args.dataset_name, num_proc=args.cpu_num_workers)]
+            try:
+                dataset = [load_from_disk(args.dataset_name)]
+            except:
+                dataset = [load_dataset(args.dataset_name, num_proc=args.cpu_num_workers)]
 
     if args.plot_directory:
         Path(args.plot_directory).mkdir(parents=True, exist_ok=True)
