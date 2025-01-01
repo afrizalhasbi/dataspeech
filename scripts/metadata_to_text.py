@@ -285,7 +285,7 @@ if __name__ == "__main__":
 
     
     print(dataset)
-    print(dataset.select(range(1))[0)
+    print(dataset.select(range(1))[0])
     if args.save_bin_edges:
         bin_edges = {
             "speaking_rate": speaking_rate_bin_edges.tolist(),
