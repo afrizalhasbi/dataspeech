@@ -285,6 +285,7 @@ if __name__ == "__main__":
 
     
     print(dataset)
+    print(dataset.select(range(1))[0)
     if args.save_bin_edges:
         bin_edges = {
             "speaking_rate": speaking_rate_bin_edges.tolist(),
@@ -302,7 +303,7 @@ if __name__ == "__main__":
         with open(args.save_bin_edges, "w") as outfile: 
             json.dump(bin_edges, outfile)
         
-    if not args.only_save_plot
+    if not args.only_save_plot:
         if args.output_dir:
             for output_dir, df in zip(output_dirs, dataset):
                 df.save_to_disk(output_dir)
