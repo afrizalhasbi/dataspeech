@@ -41,7 +41,7 @@ if __name__ == "__main__":
         except:
             dataset = load_dataset(args.dataset_name, num_proc=args.cpu_num_workers)
     if args.debug:
-        print("Checking with 100 samples to see if the script is working"
+        print("Checking with 100 samples to see if the script is working")
         dataset = dataset.select(range(100))
         
     audio_column_name = "audio" if args.rename_column else args.audio_column_name
