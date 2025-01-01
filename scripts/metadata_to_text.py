@@ -261,6 +261,7 @@ if __name__ == "__main__":
         else:
             try:
                 dataset = [load_from_disk(args.dataset_name)]
+                dataset = [DatasetDict({"train": d}) for d in dataset]
             except Exception as e:
                 print(str(e))
                 dataset = [load_dataset(args.dataset_name, num_proc=args.cpu_num_workers)]
