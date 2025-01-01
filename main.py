@@ -61,6 +61,8 @@ if __name__ == "__main__":
             remove_columns=[audio_column_name], # tricks to avoid rewritting audio
             fn_kwargs={"audio_column_name": audio_column_name,},
         )
+        print("Squim dataset:")
+        print(squim_dataset)
 
     print("Compute pitch")
     pitch_dataset = dataset.cast_column(audio_column_name, Audio(sampling_rate=16_000)).map(
@@ -72,6 +74,8 @@ if __name__ == "__main__":
         remove_columns=[audio_column_name], # tricks to avoid rewritting audio
         fn_kwargs={"audio_column_name": audio_column_name, "penn_batch_size": args.penn_batch_size},
     )
+    print("Pitch dataset:")
+    print(pitch_dataset)
 
     print("Compute snr and reverb")
     snr_dataset = dataset.map(
@@ -83,7 +87,9 @@ if __name__ == "__main__":
         remove_columns=[audio_column_name], # tricks to avoid rewritting audio
         fn_kwargs={"audio_column_name": audio_column_name},
     )
-    
+    print("SNR dataset:")
+    print(snr_dataset)
+
     print("Compute speaking rate")
     # if "speech_duration" in snr_dataset[next(iter(snr_dataset.keys()))].features:    
     if isinstance(snr_dataset, dict):
@@ -117,16 +123,19 @@ if __name__ == "__main__":
             dataset[split] = dataset[split].add_column("speaking_rate", rate_dataset[split]["speaking_rate"]).add_column("phonemes", rate_dataset[split]["phonemes"])
             if args.apply_squim_quality_estimation:
                 dataset[split] = dataset[split].add_column("stoi", squim_dataset[split]["stoi"]).add_column("si-sdr", squim_dataset[split]["sdr"]).add_column("pesq", squim_dataset[split]["pesq"])
-        else:
-            # If it's a single Dataset
-            dataset = pitch_dataset.add_column("snr", snr_dataset["snr"]).add_column("c50", snr_dataset["c50"])
-            if "speech_duration" in snr_dataset.column_names:
-                dataset = dataset.add_column("speech_duration", snr_dataset["speech_duration"])
-            dataset = dataset.add_column("speaking_rate", rate_dataset["speaking_rate"]).add_column("phonemes", rate_dataset["phonemes"])
-            if args.apply_squim_quality_estimation:
-                dataset = dataset.add_column("stoi", squim_dataset["stoi"]).add_column("si-sdr", squim_dataset["sdr"]).add_column("pesq", squim_dataset["pesq"])
+    else:
+        # If it's a single Dataset
+        dataset = pitch_dataset.add_column("snr", snr_dataset["snr"]).add_column("c50", snr_dataset["c50"])
+        if "speech_duration" in snr_dataset.column_names:
+            dataset = dataset.add_column("speech_duration", snr_dataset["speech_duration"])
+        dataset = dataset.add_column("speaking_rate", rate_dataset["speaking_rate"]).add_column("phonemes", rate_dataset["phonemes"])
+        if args.apply_squim_quality_estimation:
+            dataset = dataset.add_column("stoi", squim_dataset["stoi"]).add_column("si-sdr", squim_dataset["sdr"]).add_column("pesq", squim_dataset["pesq"])
         
+    print("Final dataset")
     print(dataset)
+    example = dataset.select(range(1))
+    print(example[0])
     if args.output_dir:
         print("Saving to disk...")
         dataset.save_to_disk(args.output_dir)
