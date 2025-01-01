@@ -1,4 +1,4 @@
-from datasets import load_dataset, Audio
+from datasets import load_dataset, load_from_disk, Audio
 from multiprocess import set_start_method
 from dataspeech import rate_apply, pitch_apply, snr_apply, squim_apply
 import torch
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("--audio_column_name", default="audio", type=str, help="Column name of the audio column to be enriched.")
     parser.add_argument("--text_column_name", default="text", type=str, help="Text column name.")
     parser.add_argument("--rename_column", action="store_true", help="If activated, rename audio and text column names to 'audio' and 'text'. Useful if you want to merge datasets afterwards.")
-    parser.add_argument("--cpu_num_workers", default=1, type=int, help="Number of CPU workers for transformations that don't use GPUs or if no GPU are available.")
+    parser.add_argument("--cpu_num_workers", default=4, type=int, help="Number of CPU workers for transformations that don't use GPUs or if no GPU are available.")
     parser.add_argument("--cpu_writer_batch_size", default=1000, type=int, help="writer_batch_size for transformations that don't use GPUs. See: https://huggingface.co/docs/datasets/v2.17.0/en/package_reference/main_classes#datasets.Dataset.map.writer_batch_size")
     parser.add_argument("--batch_size", default=2, type=int, help="This parameters specify how many samples are passed by workers for operations that are using GPUs.")
     parser.add_argument("--penn_batch_size", default=4096, type=int, help="Pitch estimation chunks audio into smaller pieces and processes them in batch. This specify the batch size. If you are using a gpu, pick a batch size that doesn't cause memory errors.")
@@ -30,9 +30,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if args.configuration:
-        dataset = load_dataset(args.dataset_name, args.configuration, num_proc=args.cpu_num_workers,)
+        try:
+            dataset = load_from_disk(args.dataset_name, args.configuration)
+        except:
+            dataset = load_dataset(args.dataset_name, args.configuration, num_proc=args.cpu_num_workers)
     else:
-        dataset = load_dataset(args.dataset_name, num_proc=args.cpu_num_workers,)
+        try:
+            dataset = load_from_disk(args.dataset_name)
+        except:
+            dataset = load_dataset(args.dataset_name, num_proc=args.cpu_num_workers)
         
     audio_column_name = "audio" if args.rename_column else args.audio_column_name
     text_column_name = "text" if args.rename_column else args.text_column_name
