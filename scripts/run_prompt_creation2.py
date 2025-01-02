@@ -82,7 +82,9 @@ def main(ds_name, model, test):
     ds_name_pq = ds_name_short + "_cached.parquet"
     try:
         ds = load_from_disk(ds_name_short)
-    except:
+        print("Loaded dataset from disk")
+    except Exception as e:
+        print(str(e))
         ds = load_dataset(ds_name)['train']
     if test:
         ds = ds.select(range(100))
