@@ -40,12 +40,51 @@ def prepare_prompt(example):
     example['prompt'] = prompt
     return example
 
-def main(ds_name):
+def _send(data, url):
+    NON_RETRYABLE_CODES = {400, 401, 403, 404, 405, 409, 413, 422}
+    try:
+        response = requests.post(url, json=data)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in NON_RETRYABLE_CODES:
+            E = e.response.status_code
+            logger.error(f"Non-retryable error: {E}")
+            print(str(e))
+            return None
+        logger.error(f"HTTP error occurred: {e}")
+        raise
+    except requests.exceptions.RequestException as e:
+        if hasattr(e, 'response') and e.response is not None:
+            logger.error(f"Request failed: {e.response.status_code}")
+        else:
+            logger.error(f"Request failed: {str(e)}")
+        raise
+
+def infer(model, messages):
+    data = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": 5000,
+        "temperature": 0,
+        "top_p": 1,
+    }
+
+    response_json = _send(data, "localhost:8000")
+    if response_json is None:
+        return "<placeholder>"
+
+    text = response_json['choices'][0]['message']['content'].strip()
+    return text
+
+def main(ds_name, model, test):
     ds_name_pq = ds_name.split("/")[1] + "_cached.parquet"
     try:
         ds = load_from_disk(ds_name_short)
     except:
         ds = load_dataset(ds_name)['train']
+    if test:
+        ds = ds.select(range(100))
         
     try:
         prompts = pd.read_parquet(ds_name_pq)["prompt"]
@@ -55,10 +94,21 @@ def main(ds_name):
         ds = ds.map(prepare_prompt, num_proc=8)
         prompts = list(ds["prompt"])
         pd.DataFrame({"prompt":prompts}).to_parquet(ds_name_pq, index=False)
-
-
+        
+    annotations = []
+    for prompt in tqdm(prompts, desc="Annotating..."):
+        messages = [{"role": "user", "messages": prompt}]
+        output = infer(model, messages)
+        annotations.append(output)
+    fails = annotations.count("<placeholder>")
+    print(f"Failed annotations: {fails}")
+    ds = ds.add_column("annotation", annotations)
+    ds.save_to_disk(ds_name.split("/")[1] + "+annotated")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ds_name', type=str, required=True, help='dataset name')
-    main(ds_name)
+    parser.add_argument('--model', type=str, required=True, help='vllm model name')
+    parser.add_argument('--test', action='store_true', default=False, help='test with 100 samples')
+    ds_name, model, test = args.ds_name, args.model, args.test
+    main(ds_name, model, test)
