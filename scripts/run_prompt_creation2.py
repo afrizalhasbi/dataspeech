@@ -78,6 +78,7 @@ def infer(model, messages):
     return text
 
 def main(ds_name, model, test):
+    global prompt
     ds_name_short = ds_name.split("/")[-1] 
     ds_name_pq = ds_name_short + "_cached.parquet"
     try:
