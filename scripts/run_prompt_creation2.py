@@ -78,7 +78,7 @@ def infer(model, messages):
     return text
 
 def main(ds_name, model, test):
-    ds_name_pq = ds_name.split("/")[1] + "_cached.parquet"
+    ds_name_pq = ds_name.split("/")[-1] + "_cached.parquet"
     try:
         ds = load_from_disk(ds_name_short)
     except:
