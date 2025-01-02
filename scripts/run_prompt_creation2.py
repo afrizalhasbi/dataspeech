@@ -110,5 +110,6 @@ if __name__ == "__main__":
     parser.add_argument('--ds_name', type=str, required=True, help='dataset name')
     parser.add_argument('--model', type=str, required=True, help='vllm model name')
     parser.add_argument('--test', action='store_true', default=False, help='test with 100 samples')
+    args = parser.parse_args()
     ds_name, model, test = args.ds_name, args.model, args.test
     main(ds_name, model, test)
