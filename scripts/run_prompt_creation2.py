@@ -85,7 +85,11 @@ def main(ds_name, model, test):
         print("Loaded dataset from disk")
     except Exception as e:
         print(str(e))
-        ds = load_dataset(ds_name)['train']
+        ds = load_dataset(ds_name)
+    try:
+        ds = ds['train']
+    except:
+        pass
     if test:
         ds = ds.select(range(100))
         
