@@ -1,10 +1,14 @@
+import time
+import requests
 import os
 from datasets import load_dataset, load_from_disk
 import pandas as pd
 from tqdm import tqdm
 import argparse
 
-prompt = """You will be given six descriptive keywords related to an audio sample of a person's speech. These keywords include:
+prompt = """### SYSTEM
+You will be given six descriptive keywords related to an audio sample of a person's speech. These keywords include:
+
 1. The speaker's name
 2. The level of reverberation (very distant-sounding, distant-sounding, slightly distant-sounding, slightly close-sounding, very close-sounding)
 3. The amount of noise in the sample (extremely noisy, very noisy, noisy, slightly noisy, almost no noise, very clear)
@@ -26,10 +30,12 @@ DO NOT use gendered pronouns. Keep the speaker's gender unknown/neutral in the d
 
 Ensure that the generated description is grammatically correct, easy to understand, and concise. Only return one and only one description.
 
-For the keywords: '[speaker]', '[reverberation]', '[sdr_noise]', '[speech_monotony]', '[speaking_rate]', '[pitch]', the corresponding description is:
+### TASK
+Write the description for these keywords: '[speaker]', '[reverberation]', '[sdr_noise]', '[speech_monotony]', '[speaking_rate]', '[pitch]'
 """
 
 def prepare_prompt(example):
+    global prompt
     speaker = example['speaker']
     reverb = example['reverberation']
     noise = example['sdr_noise']
@@ -56,9 +62,9 @@ def _send(data, url):
         raise
     except requests.exceptions.RequestException as e:
         if hasattr(e, 'response') and e.response is not None:
-            logger.error(f"Request failed: {e.response.status_code}")
+            tqdm.write(f"Request failed: {e.response.status_code}")
         else:
-            logger.error(f"Request failed: {str(e)}")
+            tqdm.write(f"Request failed: {str(e)}")
         raise
 
 def infer(model, messages):
@@ -70,14 +76,16 @@ def infer(model, messages):
         "top_p": 1,
     }
 
-    response_json = _send(data, "localhost:8000")
+    response_json = _send(data, "http://0.0.0.0:8000/v1/chat/completions")
     if response_json is None:
         return "<placeholder>"
 
     text = response_json['choices'][0]['message']['content'].strip()
+    tqdm.write(messages[0]['content'])
+    tqdm.write(text)
     return text
 
-def main(ds_name, model, test):
+def main(ds_name, model, test, recache):
     global prompt
     ds_name_short = ds_name.split("/")[-1] 
     ds_name_pq = ds_name_short + "_cached.parquet"
@@ -91,33 +99,44 @@ def main(ds_name, model, test):
         ds = ds['train']
     except:
         pass
+
     if test:
-        ds = ds.select(range(100))
-        
-    try:
-        prompts = pd.read_parquet(ds_name_pq)["prompt"]
-        print("Loaded cached prompts")
-    except:
-        print("Cached prompts not found. Recreating...")
+        ds = ds.select(range(10))
+    if not recache:
+        try:
+            prompts = pd.read_parquet(ds_name_pq)["prompt"]
+            print("Loaded cached prompts")
+        except:
+            pass
+    else:
+        print("Recreating...")
         ds = ds.map(prepare_prompt, num_proc=8)
         prompts = list(ds["prompt"])
         pd.DataFrame({"prompt":prompts}).to_parquet(ds_name_pq, index=False)
-        
+
+    time.sleep(2)
     annotations = []
     for prompt in tqdm(prompts, desc="Annotating..."):
-        messages = [{"role": "user", "messages": prompt}]
+        messages = [{"role": "user", "content": prompt}]
         output = infer(model, messages)
         annotations.append(output)
     fails = annotations.count("<placeholder>")
     print(f"Failed annotations: {fails}")
-    ds = ds.add_column("annotation", annotations)
-    ds.save_to_disk(ds_name_short + "+annotated")
+    if not test:
+        ds = ds.add_column("annotation", annotations)
+        ds.save_to_disk(ds_name_short + "_annotated")
+    else:
+        selection = ds.select(range(10))
+        selection = selection.add_column("annotation", annotations)
+        print(selection['annotation'])
+    print("Done")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ds_name', type=str, required=True, help='dataset name')
     parser.add_argument('--model', type=str, required=True, help='vllm model name')
-    parser.add_argument('--test', action='store_true', default=False, help='test with 100 samples')
+    parser.add_argument('--test', action='store_true', default=False, help='test with 10 samples')
+    parser.add_argument('--recache', action='store_true', default=False, help='remove cache and recreate')
     args = parser.parse_args()
-    ds_name, model, test = args.ds_name, args.model, args.test
-    main(ds_name, model, test)
+    ds_name, model, test, recache = args.ds_name, args.model, args.test, args.recache
+    main(ds_name, model, test, recache)
